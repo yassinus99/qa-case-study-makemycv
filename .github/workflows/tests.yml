@@ -1,0 +1,117 @@
+name: E2E Tests – MakeMyCV
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Smoke tests quotidiens à 8h50 (avant le déploiement canary de 9h00)
+    - cron: '50 8 * * 1-5'
+
+jobs:
+  smoke-tests:
+    name: Smoke Tests (P1 – bloquants)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run smoke tests
+        run: npx playwright test --grep @smoke --project=chromium --reporter=github
+        env:
+          BASE_URL: ${{ secrets.STAGING_URL }}
+
+      - name: Upload report on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: smoke-report-failure
+          path: playwright-report/
+          retention-days: 7
+
+  regression-tests:
+    name: Regression Suite (multi-browser)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: smoke-tests
+    if: github.ref == 'refs/heads/main' || github.event_name == 'schedule'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Run regression suite
+        run: npx playwright test --grep @regression --reporter=html
+        env:
+          BASE_URL: ${{ secrets.STAGING_URL }}
+
+      - name: Upload Playwright HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-regression
+          path: playwright-report/
+          retention-days: 14
+
+  mobile-tests:
+    name: Mobile Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: smoke-tests
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Run mobile tests
+        run: npx playwright test --grep @mobile --project=mobile-chrome --project=mobile-safari
+        env:
+          BASE_URL: ${{ secrets.STAGING_URL }}
+
+      - name: Upload mobile report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-mobile
+          path: playwright-report/
+          retention-days: 14

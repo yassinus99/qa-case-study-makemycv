@@ -1,0 +1,18 @@
+{
+  "firstName": "John",
+  "lastName":  "Doe",
+  "jobTitle":  "Ingénieur QA",
+  "email":     "john.doe@gmail.com",
+  "phone":     "06 12 34 56 78",
+  "city":      "Paris",
+  "experience": {
+    "company":     "Dotworld",
+    "position":    "QA engineer",
+    "description": "Test et validation."
+  },
+  "education": {
+    "school": "Université Paris-Saclay",
+    "degree": "Master Informatique"
+  },
+  "skills": ["Test auoto", "Test API", "Test manuel"]
+}
