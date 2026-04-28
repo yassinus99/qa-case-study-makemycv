@@ -7,7 +7,7 @@ on:
     branches: [main]
   schedule:
     # Smoke tests quotidiens à 8h50 (avant le déploiement canary de 9h00)
-    - cron: '50 8 * * 1-5'
+   # - cron: '50 8 * * 1-5'
 
 jobs:
   smoke-tests:
